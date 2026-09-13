@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>Scanner QR - Stock Opname</title>
+
+  <!-- Library QR Scanner -->
+  <script src="https://unpkg.com/html5-qrcode"
+          type="text/javascript"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f3f4f6;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+      margin: auto;
+    }
+
+    h2 {
+      margin: 5px 0;
+    }
+
+    .judul {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    #reader {
+      width: 100%;
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    }
+
+    #status {
+      margin: 15px 0;
+      padding: 12px;
+      background: white;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    #hasil {
+      margin-top: 15px;
+      padding: 18px;
+      background: white;
+      border-radius: 10px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    #tombol {
+      margin-top: 15px;
+      padding: 14px 25px;
+      border: none;
+      border-radius: 10px;
+      background: #333;
+      color: white;
+      font-size: 16px;
+    }
+
+    .footer {
+      margin-top: 25px;
+      font-size: 13px;
+      color: #777;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2>📷 SCANNER QR</h2>
+
+  <div class="judul">
+    Aplikasi Stock Opname
+  </div>
+
+  <div id="status">
+    Menyiapkan kamera...
+  </div>
+
+  <div id="reader"></div>
+
+  <div id="hasil">
+    Arahkan kamera ke QR Code
+  </div>
+
+  <button id="tombol"
+          onclick="mulaiScanner()">
+    🔄 Mulai Scanner
+  </button>
+
+  <div class="footer">
+    ~@djie Muhammad ~
+  </div>
+
+</div>
+
+
+<script>
+
+let scanner = null;
+let sudahScan = false;
+
+
+/* =========================================
+   MULAI SCANNER
+========================================= */
+
+function mulaiScanner() {
+
+  sudahScan = false;
+
+  document.getElementById("status").innerText =
+    "Meminta akses kamera...";
+
+  document.getElementById("hasil").innerText =
+    "Arahkan kamera ke QR Code";
+
+
+  if (scanner !== null) {
+
+    scanner.clear().catch(function(error) {
+      console.log(error);
+    });
+
+  }
+
+
+  scanner = new Html5Qrcode("reader");
+
+
+  const config = {
+
+    fps: 10,
+
+    qrbox: function(width, height) {
+
+      const ukuran =
+        Math.min(width, height) * 0.70;
+
+      return {
+        width: ukuran,
+        height: ukuran
+      };
+
+    },
+
+    aspectRatio: 1.0
+
+  };
+
+
+  scanner.start(
+
+    {
+      facingMode: {
+        exact: "environment"
+      }
+    },
+
+    config,
+
+    function(decodedText, decodedResult) {
+
+      if (sudahScan) {
+        return;
+      }
+
+      sudahScan = true;
+
+      console.log(
+        "QR TERBACA:",
+        decodedText
+      );
+
+      prosesHasilScan(decodedText);
+
+    },
+
+    function(errorMessage) {
+
+      // Scanner terus mencoba membaca QR.
+      // Error di sini tidak perlu ditampilkan.
+
+    }
+
+  )
+
+  .then(function() {
+
+    document.getElementById("status").innerText =
+      "🟢 Kamera aktif — arahkan ke QR";
+
+  })
+
+  .catch(function(error) {
+
+    console.error(error);
+
+    document.getElementById("status").innerText =
+      "❌ Kamera tidak dapat digunakan";
+
+    document.getElementById("hasil").innerText =
+      "Periksa izin kamera HP";
+
+  });
+
+}
+
+
+/* =========================================
+   HASIL SCAN
+========================================= */
+
+function prosesHasilScan(kode) {
+
+  kode = String(kode)
+    .trim()
+    .toUpperCase();
+
+
+  document.getElementById("status").innerText =
+    "✅ QR berhasil dibaca";
+
+  document.getElementById("hasil").innerText =
+    kode;
+
+
+  if (scanner !== null) {
+
+    scanner.stop()
+
+      .then(function() {
+
+        console.log(
+          "Scanner dihentikan"
+        );
+
+        kembaliKeAplikasi(kode);
+
+      })
+
+      .catch(function(error) {
+
+        console.log(error);
+
+        kembaliKeAplikasi(kode);
+
+      });
+
+  } else {
+
+    kembaliKeAplikasi(kode);
+
+  }
+
+}
+
+
+/* =========================================
+   KEMBALI KE APLIKASI STOCK OPNAME
+========================================= */
+
+function kembaliKeAplikasi(kode) {
+
+  const urlAplikasi =
+    "https://script.google.com/macros/s/AKfycby7qagkOV4c9VflAoRYz_2xpngpopCwJhZsB__ux3UZqa2CLhWvUedNudA0cn9WyXkh/exec";
+
+
+  const url =
+    urlAplikasi +
+    "?qr=" +
+    encodeURIComponent(kode);
+
+
+  document.getElementById("status").innerText =
+    "Mengirim hasil scan...";
+
+
+  setTimeout(function() {
+
+    window.location.href = url;
+
+  }, 800);
+
+}
+
+
+/* =========================================
+   OTOMATIS MULAI
+========================================= */
+
+window.addEventListener(
+  "load",
+  function() {
+
+    mulaiScanner();
+
+  }
+);
+
+</script>
+
+</body>
+</html>
