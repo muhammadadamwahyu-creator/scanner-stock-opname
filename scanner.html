@@ -1,15 +1,12 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="id">
 <head>
-
   <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-  <title>Scanner QR - Stock Opname</title>
+  <title>Scanner Stock Opname</title>
 
   <script
     src="https://unpkg.com/html5-qrcode"
@@ -17,7 +14,6 @@
   </script>
 
   <style>
-
     * {
       box-sizing: border-box;
     }
@@ -30,6 +26,12 @@
       text-align: center;
     }
 
+    .container {
+      width: 100%;
+      max-width: 500px;
+      margin: auto;
+    }
+
     h2 {
       margin: 5px 0 10px;
       color: #222;
@@ -37,9 +39,11 @@
 
     #status {
       margin: 10px auto;
-      padding: 10px;
+      padding: 12px;
       max-width: 500px;
       color: #555;
+      background: white;
+      border-radius: 10px;
     }
 
     #reader {
@@ -61,7 +65,7 @@
       font-weight: bold;
     }
 
-    #btnIzin {
+    #btnKamera {
       display: none;
       width: 100%;
       max-width: 500px;
@@ -75,49 +79,61 @@
       font-weight: bold;
     }
 
+    .footer {
+      margin-top: 25px;
+      font-size: 13px;
+      color: #777;
+    }
   </style>
-
 </head>
-
 
 <body>
 
+<div class="container">
 
-<h2>📷 SCAN QR LOKASI</h2>
+  <h2 id="judul">📷 SCANNER</h2>
 
+  <div id="status">
+    Menyiapkan kamera...
+  </div>
 
-<div id="status">
-  Memeriksa kamera...
+  <button
+    id="btnKamera"
+    onclick="mintaIzinKamera()">
+    📷 IZINKAN KAMERA
+  </button>
+
+  <div id="reader"></div>
+
+  <div id="hasil">
+    Menunggu kamera...
+  </div>
+
+  <div class="footer">
+    ~@djie Muhammad ~
+  </div>
+
 </div>
-
-
-<button
-  id="btnIzin"
-  onclick="mintaIzinKamera()">
-
-  📷 IZINKAN KAMERA
-
-</button>
-
-
-<div id="reader"></div>
-
-
-<div id="hasil">
-  Arahkan kamera ke QR Code
-</div>
-
 
 <script>
-
 
 /* =====================================================
    URL APLIKASI STOCK OPNAME
 ===================================================== */
 
 var URL_APLIKASI =
-  "https://script.google.com/macros/s/AKfycby7qagkOV4c9VflAoRYz_2xpngpopCwJhZsB__ux3UZqa2CLhWvUedNudA0cn9WyXkh/exec";
+"https://script.google.com/macros/s/AKfycbyMlfTW4TS3LYOKdqkq7OeHQmF5wI-6JekoXEC1wwO8LirU_Cw78I-F7ELjMkXwtROE/exec";
 
+
+/* =====================================================
+   TENTUKAN MODE SCANNER
+===================================================== */
+
+var parameter =
+new URLSearchParams(window.location.search);
+
+var mode =
+parameter.get("mode");
 
 var scanner = null;
 
@@ -125,12 +141,45 @@ var sudahScan = false;
 
 
 /* =====================================================
-   TAMPILKAN STATUS
+   JIKA MODE PRODUK
 ===================================================== */
 
-function statusPesan(pesan) {
+if (mode === "produk") {
 
-  document.getElementById("status").innerText = pesan;
+  document.getElementById("judul").innerText =
+    "📷 SCAN BARCODE BARANG";
+
+  document.getElementById("hasil").innerText =
+    "Arahkan kamera ke barcode barang";
+
+}
+
+
+/* =====================================================
+   JIKA MODE LOKASI
+===================================================== */
+
+else {
+
+  mode = "lokasi";
+
+  document.getElementById("judul").innerText =
+    "📷 SCAN QR NO. LOKASI";
+
+  document.getElementById("hasil").innerText =
+    "Arahkan kamera ke QR lokasi";
+
+}
+
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+function setStatus(pesan) {
+
+  document.getElementById("status").innerText =
+    pesan;
 
 }
 
@@ -141,26 +190,51 @@ function statusPesan(pesan) {
 
 function mintaIzinKamera() {
 
-  statusPesan("Meminta izin kamera...");
+  setStatus("Meminta izin kamera...");
+
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ) {
+
+    setStatus(
+      "❌ Browser tidak mendukung kamera."
+    );
+
+    return;
+  }
+
 
   navigator.mediaDevices.getUserMedia({
-    video: true
+
+    video: {
+      facingMode: {
+        ideal: "environment"
+      }
+    },
+
+    audio: false
+
   })
 
   .then(function(stream) {
 
-    /*
-       Kamera berhasil mendapatkan izin.
-       Matikan stream sementara.
-    */
+    stream
+      .getTracks()
+      .forEach(function(track) {
 
-    stream.getTracks().forEach(function(track) {
-      track.stop();
-    });
+        track.stop();
+
+      });
 
 
-    document.getElementById("btnIzin")
+    document.getElementById("btnKamera")
       .style.display = "none";
+
+
+    setStatus(
+      "Izin kamera berhasil."
+    );
 
 
     mulaiScanner();
@@ -171,14 +245,14 @@ function mintaIzinKamera() {
 
     console.error(error);
 
-    statusPesan(
-      "❌ Izin kamera ditolak atau kamera tidak tersedia."
+    setStatus(
+      "❌ Kamera tidak diizinkan."
     );
 
     document.getElementById("hasil").innerText =
-      "Silakan izinkan akses kamera pada browser.";
+      "Silakan izinkan kamera.";
 
-    document.getElementById("btnIzin")
+    document.getElementById("btnKamera")
       .style.display = "block";
 
   });
@@ -192,179 +266,156 @@ function mintaIzinKamera() {
 
 function mulaiScanner() {
 
-  statusPesan("Mencari kamera...");
+  setStatus(
+    "Mencari kamera belakang..."
+  );
 
-
-  /*
-     Ambil daftar kamera
-  */
 
   Html5Qrcode.getCameras()
 
-    .then(function(devices) {
+  .then(function(devices) {
+
+    if (
+      !devices ||
+      devices.length === 0
+    ) {
+
+      setStatus(
+        "❌ Kamera tidak ditemukan."
+      );
+
+      return;
+    }
 
 
-      if (!devices || devices.length === 0) {
+    var kamera =
+      devices[0];
 
-        statusPesan(
-          "❌ Kamera tidak ditemukan."
+
+    for (
+      var i = 0;
+      i < devices.length;
+      i++
+    ) {
+
+      var label =
+        String(
+          devices[i].label || ""
+        ).toLowerCase();
+
+
+      if (
+        label.indexOf("back") !== -1 ||
+        label.indexOf("rear") !== -1 ||
+        label.indexOf("environment") !== -1
+      ) {
+
+        kamera =
+          devices[i];
+
+        break;
+
+      }
+
+    }
+
+
+    scanner =
+      new Html5Qrcode("reader");
+
+
+    var config = {
+
+      fps: 10,
+
+      qrbox:
+      function(
+        viewfinderWidth,
+        viewfinderHeight
+      ) {
+
+        var ukuran =
+          Math.min(
+            viewfinderWidth,
+            viewfinderHeight
+          ) * 0.70;
+
+
+        return {
+
+          width: ukuran,
+
+          height: ukuran
+
+        };
+
+      },
+
+      aspectRatio: 1.0
+
+    };
+
+
+    setStatus(
+      "Membuka kamera..."
+    );
+
+
+    scanner.start(
+
+      kamera.id,
+
+      config,
+
+      function(decodedText) {
+
+        if (sudahScan) {
+
+          return;
+
+        }
+
+
+        sudahScan = true;
+
+
+        prosesHasilScan(
+          decodedText
+        );
+
+      },
+
+      function(errorMessage) {
+
+        // Abaikan error scan sementara
+
+      }
+
+    )
+
+    .then(function() {
+
+      if (mode === "produk") {
+
+        setStatus(
+          "✅ Kamera aktif — arahkan ke barcode barang"
         );
 
         document.getElementById("hasil").innerText =
-          "HP tidak menemukan kamera.";
-
-        return;
+          "Arahkan kamera ke barcode barang";
 
       }
 
+      else {
 
-      console.log("Jumlah kamera:", devices.length);
+        setStatus(
+          "✅ Kamera aktif — arahkan ke QR lokasi"
+        );
 
-
-      /*
-         Pilih kamera.
-         Biasanya kamera belakang berada
-         pada device terakhir atau memiliki
-         label back/rear/environment.
-      */
-
-      var kameraDipilih = devices[0];
-
-
-      for (var i = 0; i < devices.length; i++) {
-
-        var label =
-          String(devices[i].label || "")
-            .toLowerCase();
-
-
-        if (
-          label.includes("back") ||
-          label.includes("rear") ||
-          label.includes("environment")
-        ) {
-
-          kameraDipilih = devices[i];
-
-          break;
-
-        }
+        document.getElementById("hasil").innerText =
+          "Arahkan kamera ke QR lokasi";
 
       }
-
-
-      console.log(
-        "Kamera digunakan:",
-        kameraDipilih
-      );
-
-
-      scanner =
-        new Html5Qrcode("reader");
-
-
-      var config = {
-
-        fps: 10,
-
-        qrbox: function(
-          viewfinderWidth,
-          viewfinderHeight
-        ) {
-
-          var ukuran =
-            Math.min(
-              viewfinderWidth,
-              viewfinderHeight
-            ) * 0.70;
-
-
-          return {
-            width: ukuran,
-            height: ukuran
-          };
-
-        },
-
-        aspectRatio: 1.0
-
-      };
-
-
-      statusPesan(
-        "Mengaktifkan kamera..."
-      );
-
-
-      scanner.start(
-
-        kameraDipilih.id,
-
-        config,
-
-
-        function(decodedText) {
-
-
-          if (sudahScan) {
-            return;
-          }
-
-
-          sudahScan = true;
-
-
-          hasilScan(decodedText);
-
-
-        },
-
-
-        function(errorMessage) {
-
-          /*
-             Error saat belum menemukan QR
-             sengaja tidak ditampilkan.
-          */
-
-        }
-
-      )
-
-      .then(function() {
-
-        statusPesan(
-          "✅ Kamera aktif — arahkan ke QR Code"
-        );
-
-
-        document.getElementById("hasil")
-          .innerText =
-          "Arahkan kamera ke QR Code";
-
-
-      })
-
-      .catch(function(error) {
-
-        console.error(error);
-
-
-        statusPesan(
-          "❌ Kamera gagal dibuka."
-        );
-
-
-        document.getElementById("hasil")
-          .innerText =
-          "Tidak dapat menggunakan kamera.";
-
-
-        document.getElementById("btnIzin")
-          .style.display = "block";
-
-      });
-
 
     })
 
@@ -372,77 +423,92 @@ function mulaiScanner() {
 
       console.error(error);
 
-
-      statusPesan(
-        "❌ Tidak dapat mengakses kamera."
+      setStatus(
+        "❌ Kamera gagal dibuka."
       );
 
+      document.getElementById("hasil").innerText =
+        "Kamera gagal dibuka.";
 
-      document.getElementById("hasil")
-        .innerText =
-        "Browser belum memberikan izin kamera.";
-
-
-      document.getElementById("btnIzin")
+      document.getElementById("btnKamera")
         .style.display = "block";
 
     });
+
+  })
+
+  .catch(function(error) {
+
+    console.error(error);
+
+    setStatus(
+      "❌ Tidak dapat mengambil kamera."
+    );
+
+    document.getElementById("hasil").innerText =
+      "Akses kamera belum diberikan.";
+
+    document.getElementById("btnKamera")
+      .style.display = "block";
+
+  });
 
 }
 
 
 /* =====================================================
-   QR BERHASIL DIBACA
+   HASIL SCAN
 ===================================================== */
 
-function hasilScan(kode) {
-
+function prosesHasilScan(kode) {
 
   kode =
-    String(kode)
-      .trim()
-      .toUpperCase();
+    String(kode).trim();
 
 
-  document.getElementById("hasil")
-    .innerText =
-    "✅ QR TERBACA: " + kode;
+  document.getElementById("hasil").innerText =
+    "✅ TERBACA: " + kode;
 
 
-  statusPesan(
+  setStatus(
     "Mengirim hasil scan..."
   );
 
 
-  /*
-     Hentikan kamera
-  */
+  /* =================================================
+     MODE BARCODE PRODUK
+  ================================================= */
 
-  if (scanner) {
+  if (mode === "produk") {
 
-    scanner.stop()
+    var urlKembali =
+      URL_APLIKASI +
+      "?barcode=" +
+      encodeURIComponent(kode);
 
-      .then(function() {
 
-        kembaliKeAplikasi(kode);
+    kirimKeAplikasi(
+      urlKembali
+    );
 
-      })
 
-      .catch(function(error) {
-
-        console.error(error);
-
-        kembaliKeAplikasi(kode);
-
-      });
-
+    return;
   }
 
-  else {
 
-    kembaliKeAplikasi(kode);
+  /* =================================================
+     MODE QR LOKASI
+  ================================================= */
 
-  }
+  var urlKembali =
+    URL_APLIKASI +
+    "?qr=" +
+    encodeURIComponent(kode);
+
+
+  kirimKeAplikasi(
+    urlKembali
+  );
 
 }
 
@@ -451,21 +517,39 @@ function hasilScan(kode) {
    KEMBALI KE APLIKASI
 ===================================================== */
 
-function kembaliKeAplikasi(kode) {
+function kirimKeAplikasi(url) {
 
+  if (scanner) {
 
-  var urlKembali =
-    URL_APLIKASI +
-    "?qr=" +
-    encodeURIComponent(kode);
+    scanner.stop()
 
+    .then(function() {
 
-  /*
-     replace agar scanner tidak masuk
-     kembali saat tombol BACK ditekan.
-  */
+      window.location.replace(
+        url
+      );
 
-  window.location.replace(urlKembali);
+    })
+
+    .catch(function(error) {
+
+      console.error(error);
+
+      window.location.replace(
+        url
+      );
+
+    });
+
+  }
+
+  else {
+
+    window.location.replace(
+      url
+    );
+
+  }
 
 }
 
@@ -478,38 +562,12 @@ window.addEventListener(
   "load",
   function() {
 
-    /*
-       Coba langsung mencari kamera.
-    */
-
-    if (
-      navigator.mediaDevices &&
-      navigator.mediaDevices.getUserMedia
-    ) {
-
-      mulaiScanner();
-
-    }
-
-    else {
-
-      statusPesan(
-        "❌ Browser tidak mendukung akses kamera."
-      );
-
-      document.getElementById("hasil")
-        .innerText =
-        "Gunakan Chrome Android versi terbaru.";
-
-    }
+    mintaIzinKamera();
 
   }
 );
 
-
 </script>
 
-
 </body>
-
 </html>
