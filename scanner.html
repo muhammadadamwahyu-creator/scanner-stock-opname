@@ -2,16 +2,11 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Scanner Stock Opname</title>
 
-  <script
-    src="https://unpkg.com/html5-qrcode"
-    type="text/javascript">
-  </script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     * {
@@ -23,7 +18,6 @@
       padding: 15px;
       background: #f5f5f5;
       font-family: Arial, sans-serif;
-      text-align: center;
     }
 
     .container {
@@ -32,57 +26,81 @@
       margin: auto;
     }
 
-    h2 {
-      margin: 5px 0 10px;
-      color: #222;
+    h1 {
+      text-align: center;
+      margin: 10px 0 5px;
+      font-size: 24px;
     }
 
-    #status {
-      margin: 10px auto;
-      padding: 12px;
-      max-width: 500px;
-      color: #555;
+    h2 {
+      text-align: center;
+      margin: 0 0 20px;
+      font-size: 17px;
+      color: #666;
+    }
+
+    .card {
       background: white;
-      border-radius: 10px;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
     }
 
     #reader {
       width: 100%;
-      max-width: 500px;
-      margin: 15px auto;
-      background: white;
-      border-radius: 12px;
       overflow: hidden;
+      border-radius: 10px;
+    }
+
+    #status {
+      margin: 15px 0;
+      padding: 12px;
+      text-align: center;
+      border-radius: 8px;
+      background: #fff3cd;
+      color: #664d03;
+      font-weight: bold;
+    }
+
+    .success {
+      background: #d1e7dd !important;
+      color: #0f5132 !important;
+    }
+
+    .error {
+      background: #f8d7da !important;
+      color: #842029 !important;
+    }
+
+    .loading {
+      background: #fff3cd !important;
+      color: #664d03 !important;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #198754;
+      color: white;
+    }
+
+    button:disabled {
+      background: #999;
     }
 
     #hasil {
-      margin: 15px auto;
-      padding: 15px;
-      max-width: 500px;
-      background: white;
-      border-radius: 10px;
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    #btnKamera {
+      margin-top: 15px;
+      padding: 12px;
+      background: #eaf4ff;
+      border-radius: 8px;
+      word-break: break-all;
       display: none;
-      width: 100%;
-      max-width: 500px;
-      padding: 15px;
-      margin: 10px auto;
-      border: none;
-      border-radius: 10px;
-      background: #198754;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-    }
-
-    .footer {
-      margin-top: 25px;
-      font-size: 13px;
-      color: #777;
     }
   </style>
 </head>
@@ -91,481 +109,323 @@
 
 <div class="container">
 
-  <h2 id="judul">📷 SCANNER</h2>
+  <h1 id="judulScanner">📷 SCANNER</h1>
+
+  <h2>STOCK OPNAME SAMUDRA</h2>
 
   <div id="status">
-    Menyiapkan kamera...
+    Memeriksa kamera...
   </div>
 
-  <button
-    id="btnKamera"
-    onclick="mintaIzinKamera()">
-    📷 IZINKAN KAMERA
-  </button>
+  <div class="card">
 
-  <div id="reader"></div>
+    <div id="reader"></div>
 
-  <div id="hasil">
-    Menunggu kamera...
-  </div>
+    <div id="hasil"></div>
 
-  <div class="footer">
-    ~@djie Muhammad ~
+    <button id="btnKamera" onclick="mulaiKamera()">
+      📷 IZINKAN KAMERA
+    </button>
+
   </div>
 
 </div>
 
+
 <script>
 
-/* =====================================================
-   URL APLIKASI STOCK OPNAME
-===================================================== */
+  // =========================================================
+  // KONFIGURASI
+  // =========================================================
 
-var URL_APLIKASI =
-"https://script.google.com/macros/s/AKfycbyMlfTW4TS3LYOKdqkq7OeHQmF5wI-6JekoXEC1wwO8LirU_Cw78I-F7ELjMkXwtROE/exec";
-
-
-/* =====================================================
-   TENTUKAN MODE SCANNER
-===================================================== */
-
-var parameter =
-new URLSearchParams(window.location.search);
-
-var mode =
-parameter.get("mode");
-
-var scanner = null;
-
-var sudahScan = false;
+  var URL_APLIKASI =
+    "https://script.google.com/macros/s/AKfycbyMlfTW4TS3LYOKdqkq7OeHQmF5wI-6JekoXEC1wwO8LirU_Cw78I-F7ELjMkXwtROE/exec";
 
 
-/* =====================================================
-   JIKA MODE PRODUK
-===================================================== */
+  // =========================================================
+  // TENTUKAN MODE
+  // =========================================================
 
-if (mode === "produk") {
+  var parameterURL = new URLSearchParams(window.location.search);
 
-  document.getElementById("judul").innerText =
-    "📷 SCAN BARCODE BARANG";
+  var mode = parameterURL.get("mode");
 
-  document.getElementById("hasil").innerText =
-    "Arahkan kamera ke barcode barang";
-
-}
-
-
-/* =====================================================
-   JIKA MODE LOKASI
-===================================================== */
-
-else {
-
-  mode = "lokasi";
-
-  document.getElementById("judul").innerText =
-    "📷 SCAN QR NO. LOKASI";
-
-  document.getElementById("hasil").innerText =
-    "Arahkan kamera ke QR lokasi";
-
-}
-
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-function setStatus(pesan) {
-
-  document.getElementById("status").innerText =
-    pesan;
-
-}
-
-
-/* =====================================================
-   MINTA IZIN KAMERA
-===================================================== */
-
-function mintaIzinKamera() {
-
-  setStatus("Meminta izin kamera...");
-
-  if (
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-  ) {
-
-    setStatus(
-      "❌ Browser tidak mendukung kamera."
-    );
-
-    return;
+  if (mode !== "produk") {
+    mode = "lokasi";
   }
 
 
-  navigator.mediaDevices.getUserMedia({
+  // =========================================================
+  // UBAH JUDUL SESUAI MODE
+  // =========================================================
 
-    video: {
-      facingMode: {
-        ideal: "environment"
-      }
-    },
+  window.addEventListener("load", function() {
 
-    audio: false
+    if (mode === "produk") {
 
-  })
+      document.getElementById("judulScanner").innerText =
+        "📷 SCAN BARCODE BARANG";
 
-  .then(function(stream) {
+      document.getElementById("status").innerText =
+        "Arahkan kamera ke barcode produk.";
 
-    stream
-      .getTracks()
-      .forEach(function(track) {
+    } else {
 
-        track.stop();
+      document.getElementById("judulScanner").innerText =
+        "📷 SCAN QR NO. LOKASI";
 
-      });
+      document.getElementById("status").innerText =
+        "Arahkan kamera ke QR Code lokasi.";
+    }
 
-
-    document.getElementById("btnKamera")
-      .style.display = "none";
-
-
-    setStatus(
-      "Izin kamera berhasil."
-    );
-
-
-    mulaiScanner();
-
-  })
-
-  .catch(function(error) {
-
-    console.error(error);
-
-    setStatus(
-      "❌ Kamera tidak diizinkan."
-    );
-
-    document.getElementById("hasil").innerText =
-      "Silakan izinkan kamera.";
-
-    document.getElementById("btnKamera")
-      .style.display = "block";
+    // Langsung mulai kamera
+    setTimeout(function() {
+      mulaiKamera();
+    }, 500);
 
   });
 
-}
+
+  // =========================================================
+  // VARIABEL SCANNER
+  // =========================================================
+
+  var scanner = null;
+  var sedangScan = false;
 
 
-/* =====================================================
-   MULAI SCANNER
-===================================================== */
+  // =========================================================
+  // MULAI KAMERA
+  // =========================================================
 
-function mulaiScanner() {
+  function mulaiKamera() {
 
-  setStatus(
-    "Mencari kamera belakang..."
-  );
+    if (sedangScan) {
+      return;
+    }
 
+    if (typeof Html5Qrcode === "undefined") {
 
-  Html5Qrcode.getCameras()
-
-  .then(function(devices) {
-
-    if (
-      !devices ||
-      devices.length === 0
-    ) {
-
-      setStatus(
-        "❌ Kamera tidak ditemukan."
+      tampilStatus(
+        "❌ Library scanner belum berhasil dimuat.",
+        "error"
       );
 
       return;
     }
 
+    tampilStatus(
+      "📷 Meminta izin kamera...",
+      "loading"
+    );
 
-    var kamera =
-      devices[0];
+    scanner = new Html5Qrcode("reader");
+
+    var config = {
+      fps: 10,
+      qrbox: {
+        width: 280,
+        height: 150
+      },
+      aspectRatio: 1.777778
+    };
 
 
-    for (
-      var i = 0;
-      i < devices.length;
-      i++
-    ) {
+    scanner.start(
+      {
+        facingMode: "environment"
+      },
+      config,
+      function(decodedText, decodedResult) {
 
-      var label =
-        String(
-          devices[i].label || ""
-        ).toLowerCase();
+        hasilScan(decodedText);
 
+      },
+      function(errorMessage) {
 
-      if (
-        label.indexOf("back") !== -1 ||
-        label.indexOf("rear") !== -1 ||
-        label.indexOf("environment") !== -1
-      ) {
-
-        kamera =
-          devices[i];
-
-        break;
-
+        // Jangan tampilkan error scan kecil.
+        // Scanner tetap berjalan.
       }
+    )
+    .then(function() {
+
+      sedangScan = true;
+
+      document.getElementById("btnKamera").disabled = true;
+
+      tampilStatus(
+        "✅ Kamera aktif. Arahkan ke kode.",
+        "success"
+      );
+
+    })
+    .catch(function(error) {
+
+      console.error(error);
+
+      sedangScan = false;
+
+      tampilStatus(
+        "❌ Kamera tidak dapat digunakan. Pastikan izin kamera diberikan.",
+        "error"
+      );
+
+      document.getElementById("btnKamera").disabled = false;
+
+    });
+
+  }
+
+
+  // =========================================================
+  // HASIL SCAN
+  // =========================================================
+
+  function hasilScan(kode) {
+
+    if (!kode) {
+      return;
+    }
+
+    kode = String(kode).trim();
+
+    if (kode === "") {
+      return;
+    }
+
+
+    // Mencegah scan berulang
+    if (!sedangScan) {
+      return;
+    }
+
+    sedangScan = false;
+
+
+    tampilStatus(
+      "✅ Kode berhasil dibaca.",
+      "success"
+    );
+
+
+    document.getElementById("hasil").style.display = "block";
+
+    document.getElementById("hasil").innerHTML =
+      "<strong>Hasil Scan:</strong><br>" +
+      escapeHtml(kode);
+
+
+    // Matikan kamera terlebih dahulu
+    if (scanner) {
+
+      scanner.stop()
+        .then(function() {
+
+          scanner.clear();
+
+          lanjutKeAplikasi(kode);
+
+        })
+        .catch(function() {
+
+          lanjutKeAplikasi(kode);
+
+        });
+
+    } else {
+
+      lanjutKeAplikasi(kode);
+
+    }
+
+  }
+
+
+  // =========================================================
+  // KEMBALI KE APLIKASI STOCK OPNAME
+  // =========================================================
+
+  function lanjutKeAplikasi(kode) {
+
+    var tujuan = "";
+
+
+    // ---------------------------------------------------------
+    // MODE LOKASI
+    // ---------------------------------------------------------
+
+    if (mode === "lokasi") {
+
+      tujuan =
+        URL_APLIKASI +
+        "?qr=" +
+        encodeURIComponent(kode);
 
     }
 
 
-    scanner =
-      new Html5Qrcode("reader");
+    // ---------------------------------------------------------
+    // MODE PRODUK
+    // ---------------------------------------------------------
+
+    else {
+
+      tujuan =
+        URL_APLIKASI +
+        "?barcode=" +
+        encodeURIComponent(kode);
+
+    }
 
 
-    var config = {
-
-      fps: 10,
-
-      qrbox:
-      function(
-        viewfinderWidth,
-        viewfinderHeight
-      ) {
-
-        var ukuran =
-          Math.min(
-            viewfinderWidth,
-            viewfinderHeight
-          ) * 0.70;
-
-
-        return {
-
-          width: ukuran,
-
-          height: ukuran
-
-        };
-
-      },
-
-      aspectRatio: 1.0
-
-    };
-
-
-    setStatus(
-      "Membuka kamera..."
+    tampilStatus(
+      "⏳ Membuka aplikasi Stock Opname...",
+      "loading"
     );
 
 
-    scanner.start(
+    setTimeout(function() {
 
-      kamera.id,
+      window.location.href = tujuan;
 
-      config,
+    }, 500);
 
-      function(decodedText) {
-
-        if (sudahScan) {
-
-          return;
-
-        }
-
-
-        sudahScan = true;
-
-
-        prosesHasilScan(
-          decodedText
-        );
-
-      },
-
-      function(errorMessage) {
-
-        // Abaikan error scan sementara
-
-      }
-
-    )
-
-    .then(function() {
-
-      if (mode === "produk") {
-
-        setStatus(
-          "✅ Kamera aktif — arahkan ke barcode barang"
-        );
-
-        document.getElementById("hasil").innerText =
-          "Arahkan kamera ke barcode barang";
-
-      }
-
-      else {
-
-        setStatus(
-          "✅ Kamera aktif — arahkan ke QR lokasi"
-        );
-
-        document.getElementById("hasil").innerText =
-          "Arahkan kamera ke QR lokasi";
-
-      }
-
-    })
-
-    .catch(function(error) {
-
-      console.error(error);
-
-      setStatus(
-        "❌ Kamera gagal dibuka."
-      );
-
-      document.getElementById("hasil").innerText =
-        "Kamera gagal dibuka.";
-
-      document.getElementById("btnKamera")
-        .style.display = "block";
-
-    });
-
-  })
-
-  .catch(function(error) {
-
-    console.error(error);
-
-    setStatus(
-      "❌ Tidak dapat mengambil kamera."
-    );
-
-    document.getElementById("hasil").innerText =
-      "Akses kamera belum diberikan.";
-
-    document.getElementById("btnKamera")
-      .style.display = "block";
-
-  });
-
-}
-
-
-/* =====================================================
-   HASIL SCAN
-===================================================== */
-
-function prosesHasilScan(kode) {
-
-  kode =
-    String(kode).trim();
-
-
-  document.getElementById("hasil").innerText =
-    "✅ TERBACA: " + kode;
-
-
-  setStatus(
-    "Mengirim hasil scan..."
-  );
-
-
-  /* =================================================
-     MODE BARCODE PRODUK
-  ================================================= */
-
-  if (mode === "produk") {
-
-    var urlKembali =
-      URL_APLIKASI +
-      "?barcode=" +
-      encodeURIComponent(kode);
-
-
-    kirimKeAplikasi(
-      urlKembali
-    );
-
-
-    return;
   }
 
 
-  /* =================================================
-     MODE QR LOKASI
-  ================================================= */
+  // =========================================================
+  // STATUS
+  // =========================================================
 
-  var urlKembali =
-    URL_APLIKASI +
-    "?qr=" +
-    encodeURIComponent(kode);
+  function tampilStatus(pesan, tipe) {
 
+    var el = document.getElementById("status");
 
-  kirimKeAplikasi(
-    urlKembali
-  );
+    el.innerText = pesan;
 
-}
+    el.className = "";
 
-
-/* =====================================================
-   KEMBALI KE APLIKASI
-===================================================== */
-
-function kirimKeAplikasi(url) {
-
-  if (scanner) {
-
-    scanner.stop()
-
-    .then(function() {
-
-      window.location.replace(
-        url
-      );
-
-    })
-
-    .catch(function(error) {
-
-      console.error(error);
-
-      window.location.replace(
-        url
-      );
-
-    });
+    if (tipe) {
+      el.classList.add(tipe);
+    }
 
   }
 
-  else {
 
-    window.location.replace(
-      url
-    );
+  // =========================================================
+  // KEAMANAN TAMPILAN HASIL
+  // =========================================================
 
-  }
+  function escapeHtml(text) {
 
-}
-
-
-/* =====================================================
-   SAAT HALAMAN DIBUKA
-===================================================== */
-
-window.addEventListener(
-  "load",
-  function() {
-
-    mintaIzinKamera();
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
 
   }
-);
 
 </script>
 
